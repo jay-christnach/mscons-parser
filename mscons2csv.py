@@ -15,13 +15,15 @@ parser.add_argument("filename")
 args = parser.parse_args()
 filename=args.filename
 mscons = MSCONSparser(filename)
-lpHeader=('begin', 'end', 'value')
+lpHeader=('begin', 'end', 'code', 'value', 'unit')
 lpQuantity=len(mscons.lpList)
 lpHeaders=lpHeader*lpQuantity
 lpNameHeader=[]
 for lpName, lpObis in mscons.lpList:
     lpNameHeader.append(lpName)
     lpNameHeader.append(lpObis)
+    lpNameHeader.append('')
+    lpNameHeader.append('')
     lpNameHeader.append('')
 rowQuantity=max([len(item) for item in mscons.loadProfiles])
 lpRows=[]

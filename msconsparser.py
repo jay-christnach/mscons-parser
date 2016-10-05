@@ -150,6 +150,8 @@ class MSCONSparser:
         match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
         if match:
             self.currentquantity=match.group(2)
+            self.currentUnit=match.group(3)
+            self.currentCode=match.group(1)
             return('QTY',None)
         return('Error',segment + '\nExpected QTY segment')
         
@@ -174,8 +176,12 @@ class MSCONSparser:
     def DTMendtransition(self,segment):
         match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
         if match:
-            self.__currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentquantity))
+            # save the previous measurement data
+            self.__currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
+            # belongs to the now current data            
             self.currentquantity=match.group(2)
+            self.currentUnit=match.group(3)
+            self.currentCode=match.group(1)
             return('QTY',None)
         match=re.search('NAD\+.*',segment)
         if match:
@@ -261,5 +267,5 @@ class MSCONSparser:
         self.sm.run(self.sg.next())
         
 if __name__ == '__main__':
-    mscons=MSCONSparser('LG-example.mscons.txt')
+    mscons=MSCONSparser('TL-example.mscons.txt')
     
