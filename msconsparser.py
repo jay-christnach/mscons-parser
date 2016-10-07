@@ -21,13 +21,15 @@ class MSCONSparser:
     lpList=[]
     # a list of lists that are the actual loadprofiles
     loadProfiles=[]
+    # load profile interval in minutes (assume 15 minutes just in case)
+    LGinterval='15'
     ##### private variables #####
-    __chunkLocations=[]
-    __locationStartTimes=[]
-    __locationEndTimes=[]
-    __chunkObis=[]
-    __currentLpChunk=[]
-    __LpChunks=[]
+    _chunkLocations=[]
+    _locationStartTimes=[]
+    _locationEndTimes=[]
+    _chunkObis=[]
+    _currentLpChunk=[]
+    _LpChunks=[]
 
     
     def starttransition(self, segment):    
@@ -99,8 +101,8 @@ class MSCONSparser:
             
     def NADtransition(self,segment):
         if segment==None:
-            self.__LpChunks.append(self.__currentLpChunk)
-            self.__currentLpChunk=[]
+            self._LpChunks.append(self._currentLpChunk)
+            self._currentLpChunk=[]
             return('NAD',self.sg.next())
         match=re.search('NAD\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
         if match:
@@ -117,7 +119,7 @@ class MSCONSparser:
                 return('UNS',self.sg.next())
             match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)$|\+',segment)
             if match:
-                self.__chunkLocations.append(match.group(2))
+                self._chunkLocations.append(match.group(2))
                 return('LOC',self.sg.next())
             else:
                 return('Error',segment + '\nExpected NAD,UNS or LOC segment')
@@ -133,7 +135,9 @@ class MSCONSparser:
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
             if match.group(1)=='163':
-                self.__locationStartTimes.append(match.group(2))
+                self._locationStartTimes.append(self.dateConvert(match.group(2)))
+                if self.interchange_header['application_reference']=='LG':
+                    self._locationEndTimes.append(self._locationStartTimes[-1]+datetime.timedelta(hours=int(self.LGinterval)))
                 return('DTMLOC',self.sg.next())
         else:
             return('Error',segment + "\nDTM segment didn't match")
@@ -142,24 +146,24 @@ class MSCONSparser:
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
             if match.group(1)=='164':
-                self.__locationEndTimes.append(match.group(2))
+                self._locationEndTimes.append(self.dateConvert(match.group(2)))
                 return('DTMLOC',self.sg.next())
+            if self.interchange_header['application_reference']=='LG':
+                if match.group(1)=='672':
+                    self.LGinterval=match.group(2)
+                    return('RFF',self.sg.next())        
         else:
             if self.interchange_header['application_reference']=='TL':
                 match=re.search('LIN\+.*',segment)
                 if match:
                     return('LIN',self.sg.next())
-            if self.interchange_header['application_reference']=='LG':
-                match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
-                if match.group(1)=='672':
-                    self.LGinterval=match.group(2)
-                    return('RFF',segment)        
+ 
         return('Error',segment + '\nExpected DTM or LIN segment')
                 
     def LINtransition(self,segment):
         match=re.search('PIA\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
         if match:
-            self.__chunkObis.append(match.group(3))
+            self._chunkObis.append(match.group(3))
             return('PIA',self.sg.next())
         return('Error',segment + '\nExpected PIA segment did not match')
         
@@ -182,12 +186,33 @@ class MSCONSparser:
             return('LIN',self.sg.next())
         
     def QTYtransition(self,segment):
-        if segment==None:
-            return('QTY',self.sg.next())
+        if self.interchange_header['application_reference']=='LG':
+            if segment==None:
+                self.currentstarttime=self._locationStartTimes[-1]
+                self.currentendtime=self._locationEndTimes[-1]
+                return('QTY',self.sg.next())
+            match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+            if match:
+                self.currentquantity=match.group(2)
+                self.currentUnit=match.group(3)
+                self.currentCode=match.group(1)
+                # save this quantity
+                self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
+                # next QTY's times
+                self.currentendtime+=datetime.timedelta(minutes=int(self.LGinterval))
+                self.currentstarttime+=datetime.timedelta(minutes=int(self.LGinterval))
+                return('QTY',self.sg.next())
+            match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)$|\+',segment)
+            if match:
+                self._chunkLocations.append(match.group(2))
+                return('LOC',self.sg.next())
+        else:
+            if segment==None:
+                return('QTY',self.sg.next())
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
             if match.group(1)=='163':
-                self.currentstarttime=self.dateconvert(match.group(2),match.group(3))
+                self.currentstarttime=self.dateConvert(match.group(2),match.group(3))
                 return('DTMstart',self.sg.next())
         return('Error',segment + "\nExpected DTM segment didn't match")
                 
@@ -195,7 +220,7 @@ class MSCONSparser:
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
             if match.group(1)=='164':
-                self.currentendtime=self.dateconvert(match.group(2),match.group(3))
+                self.currentendtime=self.dateConvert(match.group(2),match.group(3))
                 return('DTMend',self.sg.next())
         return('Error',segment + "\nExpected DTM segment didn't match")
     
@@ -203,7 +228,7 @@ class MSCONSparser:
         match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
         if match:
             # save the previous measurement data
-            self.__currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
+            self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
             # belongs to the now current data            
             self.currentquantity=match.group(2)
             self.currentUnit=match.group(3)
@@ -214,7 +239,7 @@ class MSCONSparser:
             return('NAD',None)
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
         if match:
-            self.__LpChunks.append(self.__currentLpChunk)
+            self._LpChunks.append(self._currentLpChunk)
             return('UNT',segment)
         return('Error',segment + '\nExpected QTY, NAD, or UNT segment')
         
@@ -238,19 +263,19 @@ class MSCONSparser:
         return
         
     def concatenateState(self, msg):
-        for i,location in enumerate(self.__chunkLocations):
-            obis = self.__chunkObis[i]
+        for i,location in enumerate(self._chunkLocations):
+            obis = self._chunkObis[i]
             if (location,obis) not in self.lpList:
                 self.lpList.append((location,obis))
         for listnum in range(len(self.lpList)):
             self.loadProfiles.append([])
         for lpIndex, locobis in enumerate (self.lpList):
-            for chunkIndex, chunk in enumerate(self.__LpChunks):
-                if self.__chunkLocations[chunkIndex]==locobis[0] and self.__chunkObis[chunkIndex]==locobis[1]:
+            for chunkIndex, chunk in enumerate(self._LpChunks):
+                if self._chunkLocations[chunkIndex]==locobis[0] and self._chunkObis[chunkIndex]==locobis[1]:
                     self.loadProfiles[lpIndex].extend(chunk)                    
         return('End',None)
         
-    def dateconvert(self,dtmstring,dtmformat):
+    def dateConvert(self,dtmstring,dtmformat='303'):
         if dtmformat=='303':        
             match=re.search('(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\?\+|-)(\d{2})',dtmstring)
             if match:
