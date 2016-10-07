@@ -37,7 +37,11 @@ class MSCONSparser:
             newstate='UNB'
             return(newstate,self.sg.next())
         else:
-            return('Error',segment + "\nUNB segment didn't match")
+            match=re.search('UNA:\+\.\?',segment)
+            #escape character is assumed to always be '?'
+            if match:
+                return('Start',self.sg.next())
+        return('Error',segment + "\nUNA or UNB segment didn't match")
         
     def UNBtransition(self, segment):
         match=re.search('UNH\+(.*?)\+(.*?):(.*?):(.*?):(.*?):(.*?)($|\+|:).*',segment)
@@ -114,7 +118,7 @@ class MSCONSparser:
     def UNStransition(self, segment):
         match=re.search('NAD\+.*',segment)
         if match:        
-            return('NAD',segment)
+            return('NAD',self.sg.next())
         else:
             return('Error',segment + '\nExpected NAD segment')
     
@@ -134,11 +138,17 @@ class MSCONSparser:
                 self.__locationEndTimes.append(match.group(2))
                 return('DTMLOC',self.sg.next())
         else:
-            match=re.search('LIN\+.*',segment)
-            if match:
-                return('LIN',self.sg.next())
+            if self.interchange_header['application_reference']=='TL':
+                match=re.search('LIN\+.*',segment)
+                if match:
+                    return('LIN',self.sg.next())
+            if self.interchange_header['application_reference']=='LG':
+                match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
+                if match.group(1)=='672':
+                    self.LGinterval=match.group(2)
+                    return('RFF',segment)        
         return('Error',segment + '\nExpected DTM or LIN segment')
-        
+                
     def LINtransition(self,segment):
         match=re.search('PIA\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
         if match:
@@ -154,6 +164,15 @@ class MSCONSparser:
             self.currentCode=match.group(1)
             return('QTY',None)
         return('Error',segment + '\nExpected QTY segment')
+    
+    def RFFtransition(self,segment):
+        match=re.search('RFF\+(.*?):(.*?)($|\+.*|:.*)',segment)
+        if match:
+            # meter unit number is currently not used
+            return('RFF',self.sg.next())
+        match=re.search('LIN\+.*',segment)
+        if match:
+            return('LIN',self.sg.next())
         
     def QTYtransition(self,segment):
         if segment==None:
@@ -254,6 +273,7 @@ class MSCONSparser:
         self.sm.add_state('UNS',self.UNStransition)
         self.sm.add_state('LOC',self.LOCtransition)
         self.sm.add_state('DTMLOC',self.DTMLOCtransition)
+        self.sm.add_state('RFF',self.RFFtransition)
         self.sm.add_state('LIN',self.LINtransition)
         self.sm.add_state('PIA',self.PIAtransition)
         self.sm.add_state('QTY',self.QTYtransition)
@@ -267,5 +287,5 @@ class MSCONSparser:
         self.sm.run(self.sg.next())
         
 if __name__ == '__main__':
-    mscons=MSCONSparser('TL-example.mscons.txt')
+    mscons=MSCONSparser('LG-example.mscons.txt')
     
