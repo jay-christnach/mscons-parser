@@ -11,10 +11,17 @@ import datetime
 import re
 
 class MSCONSparser:
+    # information from the envelope header (UNB segement)
+    # most important is 'application_reference' which influences program flow
+    # dependant if application is 'LG' (whole load profile) or TL (parts of loadprofiles)
     interchange_header={}
+    # information from the message header    
     message_header={}
+    # list of tuples (location, obis-code). The loadprofiles stored
     lpList=[]
+    # a list of lists that are the actual loadprofiles
     loadProfiles=[]
+    ##### private variables #####
     __chunkLocations=[]
     __locationStartTimes=[]
     __locationEndTimes=[]
