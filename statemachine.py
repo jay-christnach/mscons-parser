@@ -4,6 +4,7 @@ Created on Mon Sep 26 09:13:28 2016
 
 @author: ChristnachJeanClaude
 """
+debug=False
 
 class StateMachine:
     def __init__(self):
@@ -37,5 +38,6 @@ class StateMachine:
                 print("reached ", newState)
                 break 
             else:
-                print(newState)
+                if debug:
+                    print(newState)
                 handler = self.handlers[newState.upper()]  

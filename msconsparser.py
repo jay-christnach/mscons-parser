@@ -69,7 +69,7 @@ class MSCONSparser:
             return('Error','Error',segment + "\nUNH segment didn't match")
             
     def UNHtransition(self, segment):
-        match=re.search('BGM\+(.*?)\+(.*?)\+(.*?)$|\+.*$',segment)
+        match=re.search('BGM\+(.*?)\+(.*?)\+(.*?)($|\+.*$)',segment)
         if match:
             self.message_header['message_name']=match.group(1)
             self.message_header['message_identification']=match.group(2)
