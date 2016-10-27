@@ -202,7 +202,7 @@ class MSCONSparser:
                 self.currentendtime+=datetime.timedelta(minutes=int(self.LGinterval))
                 self.currentstarttime+=datetime.timedelta(minutes=int(self.LGinterval))
                 return('QTY',self.sg.next())
-            match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)$|\+',segment)
+            match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)',segment)
             if match:
                 self._chunkLocations.append(match.group(2))
                 return('LOC',self.sg.next())
