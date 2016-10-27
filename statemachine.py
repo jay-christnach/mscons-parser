@@ -37,4 +37,5 @@ class StateMachine:
                 print("reached ", newState)
                 break 
             else:
+                print(newState)
                 handler = self.handlers[newState.upper()]  

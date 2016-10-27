@@ -206,7 +206,11 @@ class MSCONSparser:
             if match:
                 self._chunkLocations.append(match.group(2))
                 return('LOC',self.sg.next())
-        else:
+            match=re.search('UNT\+.*',segment)
+            if match:
+                self._LpChunks.append(self._currentLpChunk)
+                return('UNT',segment)
+        else:# application = TL
             if segment==None:
                 return('QTY',self.sg.next())
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
