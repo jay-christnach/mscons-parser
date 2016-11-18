@@ -205,6 +205,8 @@ class MSCONSparser:
             match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)',segment)
             if match:
                 self._chunkLocations.append(match.group(2))
+                self._LpChunks.append(self._currentLpChunk)
+                self._currentLpChunk=[]
                 return('LOC',self.sg.next())
             match=re.search('UNT\+.*',segment)
             if match:
@@ -250,8 +252,12 @@ class MSCONSparser:
     
     def UNTtransition(self,segment):
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
+        if self.interchange_header['application_reference']=='TL':
+            offset=3
+        else:    
+            offset=4
         if match:
-            if len(self.sg.segments)-3 != int(match.group(1)):
+            if len(self.sg.segments)-offset != int(match.group(1)):
                 return('Error',segment + '\nincorrect number of segments.')
             else:
                 return('UNZ',self.sg.next())
