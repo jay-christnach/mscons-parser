@@ -255,7 +255,10 @@ class MSCONSparser:
         if match:
             self._LpChunks.append(self._currentLpChunk)
             return('UNT',segment)
-        return('Error',segment + '\nExpected QTY, NAD, or UNT segment')
+        match=re.search('LIN\+.*',segment)
+        if match:
+            return('LIN',self.sg.next())
+        return('Error',segment + '\nExpected QTY, NAD, LIN or UNT segment')
         
     
     def UNTtransition(self,segment):
