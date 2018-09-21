@@ -172,7 +172,7 @@ class MSCONSparser:
         return('Error',segment + '\nExpected PIA segment did not match')
         
     def PIAtransition(self,segment):
-        match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+        match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
         if match:
             self.currentquantity=match.group(2)
             self.currentUnit=match.group(3)
@@ -199,7 +199,7 @@ class MSCONSparser:
                 self.currentstarttime=self._locationStartTimes[-1]
                 self.currentendtime=self._locationEndTimes[-1]
                 return('QTY',self.sg.next())
-            match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+            match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
             if match:
                 self.currentquantity=match.group(2)
                 self.currentUnit=match.group(3)
@@ -239,7 +239,7 @@ class MSCONSparser:
         return('Error',segment + "\nExpected DTM segment didn't match")
     
     def DTMendtransition(self,segment):
-        match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+        match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
         if match:
             # save the previous measurement data
             self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
