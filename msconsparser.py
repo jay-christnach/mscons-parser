@@ -96,8 +96,12 @@ class MSCONSparser:
             if match.group(1) == 'MR':
                 self.message_header['receiver']=match.group(2)
             return('NAD',self.sg.next())
+        match=re.search('RFF\+(.*?):(.*?)($|\+.*|:.*)',segment)
+        if match:
+            # meter unit number is currently not used
+            return('RFF',self.sg.next())
         else:
-            return('Error',segment + "\nNAD segment didn't match")
+            return('Error',segment + "\nNAD segment didn't match, also no RFF segment")
             
     def NADtransition(self,segment):
         if segment==None:
@@ -184,6 +188,10 @@ class MSCONSparser:
         match=re.search('LIN\+.*',segment)
         if match:
             return('LIN',self.sg.next())
+        match=re.search('NAD\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
+        if match:
+            return('NAD',segment)
+        return('Error',segment + '\nExpected LIN or NAD')
         
     def QTYtransition(self,segment):
         if self.interchange_header['application_reference']=='LG':
@@ -329,5 +337,5 @@ class MSCONSparser:
         self.sm.run(self.sg.next())
         
 if __name__ == '__main__':
-    mscons=MSCONSparser('LG-example.mscons.txt')
+    mscons=MSCONSparser('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
     
