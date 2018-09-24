@@ -4,7 +4,7 @@ Created on Mon Sep 26 09:13:28 2016
 
 @author: ChristnachJeanClaude
 """
-debug=True
+debug=False
 
 class StateMachine:
     def __init__(self):

@@ -9,7 +9,10 @@ from statemachine import StateMachine
 from segmentgenerator import SegmentGenerator
 import datetime
 import re
+import logging, sys
+from autologging import traced, TRACE
 
+@traced
 class MSCONSparser:
     # information from the envelope header (UNB segement)
     # most important is 'application_reference' which influences program flow
@@ -233,7 +236,7 @@ class MSCONSparser:
     def DTMstarttransition(self,segment):
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
-            if match.group(1)=='164':
+            if match.group(1) == '164':
                 self.currentendtime=self.dateConvert(match.group(2),match.group(3))
                 return('DTMend',self.sg.next())
         return('Error',segment + "\nExpected DTM segment didn't match")
@@ -263,15 +266,18 @@ class MSCONSparser:
     
     def UNTtransition(self,segment):
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
-        if self.interchange_header['application_reference']=='TL':
-            offset=3
-        else:    
-            offset=4
+# ***** disabled checking of segment count for now, because we get messages with wrong count *******
+#        if self.interchange_header['application_reference']=='TL':
+#            offset=3
+#        else:    
+#            offset=4
+#        if match:
+#            if len(self.sg.segments)-offset != int(match.group(1)):
+#                return('Error',segment + '\nincorrect number of segments.')
+#            else:
+#                return('UNZ',self.sg.next())
         if match:
-            if len(self.sg.segments)-offset != int(match.group(1)):
-                return('Error',segment + '\nincorrect number of segments.')
-            else:
-                return('UNZ',self.sg.next())
+            return('UNZ', self.sg.next())
     
     def UNZstate(self,segment):
         match=re.search('UNZ\+.*',segment)
@@ -340,5 +346,6 @@ class MSCONSparser:
         self.sm.run(self.sg.next())
         
 if __name__ == '__main__':
+    logging.basicConfig(level=TRACE, stream=sys.stdout, format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
     mscons=MSCONSparser('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
     

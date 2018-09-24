@@ -6,7 +6,10 @@ Created on Mon Sep 26 11:41:37 2016
 """
 
 import sys
+import logging
+from autologging import traced, TRACE
 
+@traced
 class SegmentGenerator:
     def __init__(self, filename):
         try:
@@ -25,18 +28,20 @@ class SegmentGenerator:
             for line in lines:
                 msg = msg + line.rstrip()
         self.segments=msg.split("'")
-        self.iter=iter(self.segments)
+        self.iterator=iter(self.segments)
     
     def next(self):
         try:
-            return next(self.iter)
+            return next(self.iterator)
         except StopIteration:
             return None
     
 
 if __name__ == '__main__':
-    sg = SegmentGenerator('MSCONS_10XLU-CEGEDEL-N3_20X-SUD-STROUM-M_01_20110318_114059_241.txt')
-    for i in range(16500):
+    sg = SegmentGenerator('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
+    for i in range(210436):
+        if i > 8940:
+            break
         print(sg.next())
         
     
