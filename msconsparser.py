@@ -9,7 +9,10 @@ from statemachine import StateMachine
 from segmentgenerator import SegmentGenerator
 import datetime
 import re
+import logging, sys
+from autologging import traced, TRACE
 
+@traced
 class MSCONSparser:
     # information from the envelope header (UNB segement)
     # most important is 'application_reference' which influences program flow
@@ -96,8 +99,12 @@ class MSCONSparser:
             if match.group(1) == 'MR':
                 self.message_header['receiver']=match.group(2)
             return('NAD',self.sg.next())
+        match=re.search('RFF\+(.*?):(.*?)($|\+.*|:.*)',segment)
+        if match:
+            # meter unit number is currently not used
+            return('RFF',self.sg.next())
         else:
-            return('Error',segment + "\nNAD segment didn't match")
+            return('Error',segment + "\nNAD segment didn't match, also no RFF segment")
             
     def NADtransition(self,segment):
         if segment==None:
@@ -168,7 +175,7 @@ class MSCONSparser:
         return('Error',segment + '\nExpected PIA segment did not match')
         
     def PIAtransition(self,segment):
-        match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+        match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
         if match:
             self.currentquantity=match.group(2)
             self.currentUnit=match.group(3)
@@ -184,6 +191,10 @@ class MSCONSparser:
         match=re.search('LIN\+.*',segment)
         if match:
             return('LIN',self.sg.next())
+        match=re.search('NAD\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
+        if match:
+            return('NAD',segment)
+        return('Error',segment + '\nExpected LIN or NAD')
         
     def QTYtransition(self,segment):
         if self.interchange_header['application_reference']=='LG':
@@ -191,7 +202,7 @@ class MSCONSparser:
                 self.currentstarttime=self._locationStartTimes[-1]
                 self.currentendtime=self._locationEndTimes[-1]
                 return('QTY',self.sg.next())
-            match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+            match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
             if match:
                 self.currentquantity=match.group(2)
                 self.currentUnit=match.group(3)
@@ -225,13 +236,13 @@ class MSCONSparser:
     def DTMstarttransition(self,segment):
         match=re.search('DTM\+(.*?):(.*?):(.*?)($|\+.*|:.*)',segment)
         if match:
-            if match.group(1)=='164':
+            if match.group(1) == '164':
                 self.currentendtime=self.dateConvert(match.group(2),match.group(3))
                 return('DTMend',self.sg.next())
         return('Error',segment + "\nExpected DTM segment didn't match")
     
     def DTMendtransition(self,segment):
-        match=re.search('QTY\+(.*?):(.*?):(.*?)$',segment)
+        match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
         if match:
             # save the previous measurement data
             self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
@@ -247,20 +258,26 @@ class MSCONSparser:
         if match:
             self._LpChunks.append(self._currentLpChunk)
             return('UNT',segment)
-        return('Error',segment + '\nExpected QTY, NAD, or UNT segment')
+        match=re.search('LIN\+.*',segment)
+        if match:
+            return('LIN',self.sg.next())
+        return('Error',segment + '\nExpected QTY, NAD, LIN or UNT segment')
         
     
     def UNTtransition(self,segment):
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
-        if self.interchange_header['application_reference']=='TL':
-            offset=3
-        else:    
-            offset=4
+# ***** disabled checking of segment count for now, because we get messages with wrong count *******
+#        if self.interchange_header['application_reference']=='TL':
+#            offset=3
+#        else:    
+#            offset=4
+#        if match:
+#            if len(self.sg.segments)-offset != int(match.group(1)):
+#                return('Error',segment + '\nincorrect number of segments.')
+#            else:
+#                return('UNZ',self.sg.next())
         if match:
-            if len(self.sg.segments)-offset != int(match.group(1)):
-                return('Error',segment + '\nincorrect number of segments.')
-            else:
-                return('UNZ',self.sg.next())
+            return('UNZ', self.sg.next())
     
     def UNZstate(self,segment):
         match=re.search('UNZ\+.*',segment)
@@ -329,5 +346,6 @@ class MSCONSparser:
         self.sm.run(self.sg.next())
         
 if __name__ == '__main__':
-    mscons=MSCONSparser('LG-example.mscons.txt')
+    logging.basicConfig(level=TRACE, stream=sys.stdout, format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
+    mscons=MSCONSparser('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
     
