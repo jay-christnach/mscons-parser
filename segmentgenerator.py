@@ -9,7 +9,7 @@ import sys
 import logging
 from autologging import traced, TRACE
 
-@traced
+#@traced
 class SegmentGenerator:
     def __init__(self, filename):
         try:
@@ -39,9 +39,15 @@ class SegmentGenerator:
 
 if __name__ == '__main__':
     sg = SegmentGenerator('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
-    for i in range(210436):
-        if i > 8940:
-            break
-        print(sg.next())
         
+    print("Num segments:", len(sg.segments))
+    i = 0
+    value = 'x'
+    while value:
+        value = sg.next()
+        i += 1
+        print(i, value)
+
+    print("Num iterations:", i)
+    print("Num segments:", len(sg.segments))    
     
