@@ -42,7 +42,9 @@ with open(filename + '.csv','w') as file:
         for field in row:
             if isinstance(field,datetime.datetime):
                 formatedRow.append(field.strftime('%d.%m.%Y %H:%M'))
-            else:
-                formatedRow.append(field)
-        file.write(';'.join(str(formatedRow))+CR)
+            if field is None:
+                formatedRow.append('')
+            if field is not None and not isinstance(field,datetime.datetime):
+                formatedRow.append(str(field))
+        file.write(';'.join(formatedRow)+CR)
     
