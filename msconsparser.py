@@ -12,7 +12,7 @@ import re
 import logging, sys
 from autologging import traced, TRACE
 
-@traced
+#@traced
 class MSCONSparser:
     # information from the envelope header (UNB segement)
     # most important is 'application_reference' which influences program flow
@@ -178,7 +178,7 @@ class MSCONSparser:
         match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
         if match:
             self.currentquantity=match.group(2)
-            self.currentUnit=match.group(3)
+            self.currentUnit=match.group(4)
             self.currentCode=match.group(1)
             return('QTY',None)
         return('Error',segment + '\nExpected QTY segment')
@@ -205,7 +205,7 @@ class MSCONSparser:
             match=re.search('QTY\+(.*?):(.*?)(:(.*?)$|$)',segment)
             if match:
                 self.currentquantity=match.group(2)
-                self.currentUnit=match.group(3)
+                self.currentUnit=match.group(4)
                 self.currentCode=match.group(1)
                 # save this quantity
                 self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
@@ -248,7 +248,7 @@ class MSCONSparser:
             self._currentLpChunk.append((self.currentstarttime,self.currentendtime,self.currentCode,self.currentquantity,self.currentUnit))
             # belongs to the now current data            
             self.currentquantity=match.group(2)
-            self.currentUnit=match.group(3)
+            self.currentUnit=match.group(4)
             self.currentCode=match.group(1)
             return('QTY',None)
         match=re.search('NAD\+.*',segment)
@@ -277,7 +277,24 @@ class MSCONSparser:
 #            else:
 #                return('UNZ',self.sg.next())
         if match:
-            return('UNZ', self.sg.next())
+            return('UNT', self.sg.next())
+        #if UNH then a new message begins
+        match=re.search('UNH\+(.*?)\+(.*?):(.*?):(.*?):(.*?):(.*?)($|\+|:).*',segment)
+        if match:
+            #TODO: the headers of the old message get overwritten. Need headers per message
+            self.message_header['message_identifier']=match.group(1)
+            self.message_header['message_type']=match.group(2)
+            self.message_header['message_version']=match.group(3)
+            self.message_header['message_release']=match.group(4)
+            self.message_header['controlling_agency']=match.group(5)
+            self.message_header['association_assigned_code']=match.group(6)
+            if self.message_header['message_type']!='MSCONS':
+                return('Error','Not an MSCONS message')
+            return('UNH',self.sg.next())
+        match=re.search('UNZ\+.*',segment)
+        if match:
+            return('UNZ',segment)
+        return('Error',segment + '\nUNH Expected and UNZ segment or a new message with UNH')
     
     def UNZstate(self,segment):
         match=re.search('UNZ\+.*',segment)

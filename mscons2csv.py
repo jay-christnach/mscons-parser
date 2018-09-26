@@ -44,5 +44,5 @@ with open(filename + '.csv','w') as file:
                 formatedRow.append(field.strftime('%d.%m.%Y %H:%M'))
             else:
                 formatedRow.append(field)
-        file.write(';'.join(formatedRow)+CR)
+        file.write(';'.join(str(formatedRow))+CR)
     
