@@ -29,9 +29,11 @@ class SegmentGenerator:
                 msg = msg + line.rstrip()
         self.segments=msg.split("'")
         self.iterator=iter(self.segments)
+        self.counter = 0
     
     def next(self):
         try:
+            self.counter += 1
             return next(self.iterator)
         except StopIteration:
             return None

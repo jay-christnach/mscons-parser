@@ -33,6 +33,7 @@ class MSCONSparser:
     _chunkObis=[]
     _currentLpChunk=[]
     _LpChunks=[]
+    _currentLocation = ''
 
     
     def starttransition(self, segment):    
@@ -108,8 +109,6 @@ class MSCONSparser:
             
     def NADtransition(self,segment):
         if segment==None:
-            self._LpChunks.append(self._currentLpChunk)
-            self._currentLpChunk=[]
             return('NAD',self.sg.next())
         match=re.search('NAD\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
         if match:
@@ -126,7 +125,8 @@ class MSCONSparser:
                 return('UNS',self.sg.next())
             match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)$|\+',segment)
             if match:
-                self._chunkLocations.append(match.group(2))
+                location = match.group(2)
+                self._currentLocation = location
                 return('LOC',self.sg.next())
             else:
                 return('Error',segment + '\nExpected NAD,UNS or LOC segment')
@@ -171,6 +171,10 @@ class MSCONSparser:
         match=re.search('PIA\+(.*?)\+(.*?):(.*?):(.*?)$',segment)
         if match:
             self._chunkObis.append(match.group(3))
+            self._chunkLocations.append(self._currentLocation)
+            if len(self._currentLpChunk) > 0: #not the first PIA time
+                self._LpChunks.append(self._currentLpChunk)
+                self._currentLpChunk=[]
             return('PIA',self.sg.next())
         return('Error',segment + '\nExpected PIA segment did not match')
         
@@ -215,13 +219,13 @@ class MSCONSparser:
                 return('QTY',self.sg.next())
             match=re.search('LOC\+(.*?)\+(.*?):(.*?):(.*?)',segment)
             if match:
-                self._chunkLocations.append(match.group(2))
-                self._LpChunks.append(self._currentLpChunk)
-                self._currentLpChunk=[]
+                location = match.group(2)
+                self._currentLocation = location
                 return('LOC',self.sg.next())
             match=re.search('UNT\+.*',segment)
             if match:
                 self._LpChunks.append(self._currentLpChunk)
+                self.currentLpChunk=[]
                 return('UNT',segment)
         else:# application = TL
             if segment==None:
@@ -257,6 +261,7 @@ class MSCONSparser:
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
         if match:
             self._LpChunks.append(self._currentLpChunk)
+            self._currentLpChunk = []
             return('UNT',segment)
         match=re.search('LIN\+.*',segment)
         if match:
