@@ -272,6 +272,8 @@ class MSCONSparser:
             return 'UNT', segment
         match = re.search('LIN\+.*', segment)
         if match:
+            self._currentLpChunk.append(
+                (self.currentstarttime, self.currentendtime, self.currentCode, self.currentquantity, self.currentUnit))
             return 'LIN', self.sg.next()
         return 'Error', segment + '\nExpected QTY, NAD, LIN or UNT segment'
 
