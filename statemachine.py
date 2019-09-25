@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Sep 26 09:13:28 2016
 
 @author: ChristnachJeanClaude
 """
-debug=False
+debug = False
+
 
 class StateMachine:
     def __init__(self):
@@ -27,8 +27,8 @@ class StateMachine:
         except:
             raise AssertionError("must call .set_start() before .run()")
         if not self.endStates:
-            raise  AssertionError("at least one state must be an end_state")
-    
+            raise AssertionError("at least one state must be an end_state")
+
         while True:
             (newState, cargo) = handler(cargo)
             if newState.upper() in self.endStates:
@@ -36,8 +36,8 @@ class StateMachine:
                 if handler:
                     handler(cargo)
                 print("reached ", newState)
-                break 
+                break
             else:
                 if debug:
                     print(newState)
-                handler = self.handlers[newState.upper()]  
+                handler = self.handlers[newState.upper()]

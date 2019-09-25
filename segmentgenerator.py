@@ -6,18 +6,20 @@ Created on Mon Sep 26 11:41:37 2016
 """
 
 import sys
-import logging
-from autologging import traced, TRACE
 
-#@traced
+
+# import logging
+# from autologging import traced, TRACE
+
+# @traced
 class SegmentGenerator:
     def __init__(self, filename):
         try:
             fh = open(filename)
         except IOError:
-            print ("Error: file " + filename + " not found!")
+            print("Error: file " + filename + " not found!")
             sys.exit(2)
-        lines=[]
+        lines = []
         for line in fh:
             line = line.rstrip()
             lines.append(line)
@@ -27,21 +29,21 @@ class SegmentGenerator:
             msg = ''
             for line in lines:
                 msg = msg + line.rstrip()
-        self.segments=msg.split("'")
-        self.iterator=iter(self.segments)
+        self.segments = msg.split("'")
+        self.iterator = iter(self.segments)
         self.counter = 0
-    
+
     def next(self):
         try:
             self.counter += 1
             return next(self.iterator)
         except StopIteration:
             return None
-    
+
 
 if __name__ == '__main__':
     sg = SegmentGenerator('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
-        
+
     print("Num segments:", len(sg.segments))
     i = 0
     value = 'x'
@@ -51,5 +53,4 @@ if __name__ == '__main__':
         print(i, value)
 
     print("Num iterations:", i)
-    print("Num segments:", len(sg.segments))    
-    
+    print("Num segments:", len(sg.segments))
