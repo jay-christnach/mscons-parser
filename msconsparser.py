@@ -272,6 +272,7 @@ class MSCONSparser:
     def UNTtransition(self,segment):
         match=re.search('UNT\+(.*?)\+(.*?)$',segment)
 # ***** disabled checking of segment count for now, because we get messages with wrong count *******
+#       TODO: Implement per block checking of segment count
 #        if self.interchange_header['application_reference']=='TL':
 #            offset=3
 #        else:    
