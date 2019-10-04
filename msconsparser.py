@@ -11,7 +11,6 @@ import re
 import logging, sys
 from autologging import traced, TRACE
 
-
 @traced
 class MSCONSparser:
     # information from the envelope header (UNB segment)
@@ -379,3 +378,4 @@ class MSCONSparser:
 if __name__ == '__main__':
     logging.basicConfig(level=TRACE, stream=sys.stdout, format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
     mscons = MSCONSparser('current_example.txt')
+

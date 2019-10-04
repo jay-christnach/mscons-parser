@@ -6,10 +6,9 @@ Created on Mon Sep 26 11:41:37 2016
 """
 
 import sys
+import logging
+from autologging import traced, TRACE
 
-
-# import logging
-# from autologging import traced, TRACE
 
 # @traced
 class SegmentGenerator:
@@ -43,7 +42,6 @@ class SegmentGenerator:
 
 if __name__ == '__main__':
     sg = SegmentGenerator('MSCONS_21X000000001333E_20X-SUD-STROUM-M_20180807_000026404801.txt')
-
     print("Num segments:", len(sg.segments))
     i = 0
     value = 'x'
