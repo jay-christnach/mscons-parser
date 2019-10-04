@@ -289,6 +289,7 @@ class MSCONSparser:
         #                return('Error',segment + '\nincorrect number of segments.')
         #            else:
         #                return('UNZ',self.sg.next())
+
         if match:
             return 'UNT', self.sg.next()
         # if UNH then a new message begins
